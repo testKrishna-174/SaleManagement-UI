@@ -1,0 +1,198 @@
+﻿@page
+@model SalesManagement.Pages.Admin.DesignationModel
+@{
+    ViewData["Title"] = "Designation";
+}
+<!-- start page title -->
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box">
+            <h4 class="page-title">Create/Edit Designation</h4>
+        </div>
+    </div>
+</div>
+<!-- end page title -->
+<!-- main content  -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+
+               
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="inputEmail4" class="col-form-label">Designation</label>
+                            <input type="text" class="form-control" id="txt_Designation" placeholder="Designation">
+                            <input type="hidden" id="hdn_designationid" />
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="ddl_level" class="col-form-label">Level</label>
+                            <select id="ddl_level" class="form-control" >
+                                <option value="0">Choose</option>
+                                <option value="1">Level 1</option>
+                                <option value="2">Level 2</option>
+                                <option value="3">Level 3</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="chk_isActive" checked="checked" readonly="readonly">
+                            <label class="custom-control-label" for="chk_isActive">Is Active</label>
+                        </div>
+                    </div>
+
+                    <input type="submit" class="btn btn-primary" id="btn_Save" value="Save"  />
+                    <button type="submit" class="btn btn-info" id="btn_Clear">Clear</button>
+
+               
+                <!-- end row -->
+
+            </div> <!-- end card-body -->
+        </div> <!-- end card-->
+        <div class="card">
+            <div class="row">
+                <div class="col-md-12">
+                    <table class="table mb-0" id="tbl_Desigination_Main">
+                        <thead class="bg-dark text-white">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Designation</th>
+                                <th scope="col">Level</th>
+                                <th scope="col">State</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl_Desigination">
+                           
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div> <!-- end col-->
+</div>
+<!-- end row -->
+
+<!-- Scripts start-->
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        var apiUrl = '@((ViewData["ApiUrl"]).ToString())';
+        loadTable();
+
+        // to clear  the data
+        $("#btn_Clear").click(function () {
+            clearData();
+        });
+
+        // for both Update and delete 
+        $("#btn_Save").click(function () {
+            // params assiginment
+            var requestUrl = apiUrl + "Designation/InsertDesignation";
+            var requestData = {
+                DesignationName: $("#txt_Designation").val(),
+                Level: $("#ddl_level option:selected").val(),
+                IsActive: $('#chk_isActive').is(':checked'),
+                CreatedBy: 1
+            };
+            if ($("#hdn_designationid").val() != "") {
+                requestUrl = apiUrl + "Designation/UpdateDesignation";
+                 requestData = {
+                    DesignationId: $("#hdn_designationid").val(),
+                    DesignationName: $("#txt_Designation").val(),
+                    Level: $("#ddl_level option:selected").val(),
+                    IsActive: $('#chk_isActive').is(':checked'),
+                     UpdatedBy: 1
+                };
+            }
+            // Api call
+            $.ajax(requestUrl, {
+                type: 'POST',  // http method
+                data: JSON.stringify(requestData),  // data to submit
+                contentType: 'application/json; charset=utf-8',
+                success: function (data, status, xhr) {
+                    loadTable();
+                    alert(data);
+                    clearData();
+                    //$('p').append('status: ' + status + ', data: ' + data);
+                },
+                error: function (jqXhr, textStatus, errorMessage) {
+                    alert('Error' + errorMessage);
+                    //$('p').append('Error' + errorMessage);
+                }
+            });
+        });
+
+        //edit
+        $(document).on("click", ".mdi-account-edit", function () {
+            alert("edit");
+            var id = $(this).attr("id").split("_")[1];
+            $("#hdn_designationid").val(id);
+            var currentRow = $(this).closest("tr");
+            $("#txt_Designation").val(currentRow.find("td:eq(1)").text());
+            $("#ddl_level").val(currentRow.find("td:eq(2)").text().trim().split(" ")[1]);
+        });
+
+        // delete 
+        $(document).on("click", ".mdi-delete", function () {
+            var id = $(this).attr("id").split("_")[1];
+            var currentRow = $(this).closest("tr");
+            var requestData = {
+                DesignationId: id,
+                DesignationName: currentRow.find("td:eq(1)").text(),
+                Level: currentRow.find("td:eq(2)").text().trim().split(" ")[1],
+                IsActive: 0,
+                UpdatedBy: 1
+            };
+
+            var requestUrl = apiUrl + "Designation/DeleteDesignation";
+
+            $.ajax(requestUrl, {
+                type: 'POST',  // http method
+                data: JSON.stringify(requestData),  // data to submit
+                contentType: 'application/json; charset=utf-8',
+                success: function (data, status, xhr) {
+                    loadTable();
+                    alert(data);
+                    //$('p').append('status: ' + status + ', data: ' + data);
+                },
+                error: function (jqXhr, textStatus, errorMessage) {
+                    //$('p').append('Error' + errorMessage);
+                    alert('Error' + errorMessage);
+                }
+            });
+        });
+
+        function loadTable() {
+            $("#tbl_Desigination").html("");
+            $("#hdn_designationid").val("");
+            var requestUrl = apiUrl + "Designation/GetDesignationInfo";
+            $.ajax(requestUrl, {
+                type: 'GET',  // http method
+               // data: JSON.stringify(requestData),  // data to submit
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    for (var i = 0; i < data.length; i++) {
+                        var row = $('<tr id="' + data[i].DesiginationId + '"><td>' + parseInt(i + 1) + '</td><td>' + data[i].DesiginationName + '</td><td> Level ' + data[i].Level + '</td><td>' + data[i].IsActive + '</td> <td class="table-action text-center"> <a href = "javascript: void(0);" class= "action-icon" > <i class="mdi mdi-account-edit" id="edit_' + data[i].DesiginationId + '"></i></a > <a href = "javascript: void(0);" class= "action-icon" > <i class="mdi mdi-delete" id="delete_' + data[i].DesiginationId + '"></i></a ></td ></tr>');
+                        $('#tbl_Desigination').append(row);
+                    }
+                },
+                error: function (jqXhr, textStatus, errorMessage) {
+                    //$('p').append('Error' + errorMessage);
+                    alert('Error' + errorMessage);
+                }
+            });
+        }
+
+        function clearData() {
+            $("#txt_Designation").val("");
+            $('#ddl_level option:first-child').attr("selected", "selected");
+            $('#chk_isActive').prop('checked', true);
+        }
+
+    });
+
+</script>
+
